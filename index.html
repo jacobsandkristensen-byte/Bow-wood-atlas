@@ -226,13 +226,14 @@ const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   maxZoom:19,attribution:'&copy; OpenStreetMap'
 }).addTo(map);
 const aerial = L.tileLayer.wms(
-    'https://services.norgeibilder.no/arcgis/services/Nibcache/gwc/service/wms',
-    {
-        layers: 'Nibcache',
-        format: 'image/jpeg',
-        transparent: false,
-        attribution: 'Kartverket Norge i bilder'
-    }
+  'https://services.norgeibilder.no/wms/ortofoto',
+  {
+    layers: 'ortofoto',
+    format: 'image/jpeg',
+    transparent: false,
+    version: '1.3.0',
+    attribution: '© Norge i bilder / Kartverket'
+  }
 );
 
 const observations=L.layerGroup().addTo(map);
