@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10291d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Atlas v0.3</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#10291d;--panel:rgba(15,38,27,.94);--panel2:rgba(250,248,241,.96);
+  --text:#f6f4eb;--dark:#18201a;--muted:#788179;--line:rgba(255,255,255,.13);
+  --green:#70c36b;--green2:#2f8d53;--gold:#d9bd52;--orange:#d98b3e;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#d9e3da}
+body{overflow:hidden}
+button{font:inherit}
+#map{position:absolute;inset:0}
+.leaflet-control-attribution{font-size:9px}
+.leaflet-control-zoom{display:none}
+
+.topbar{
+  position:absolute;z-index:1000;top:calc(12px + var(--safe-top));left:14px;right:14px;
+  display:flex;gap:10px;align-items:center
+}
+.search-pill{
+  flex:1;border:1px solid rgba(255,255,255,.15);background:var(--panel);color:var(--text);
+  border-radius:22px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.28);
+  display:flex;align-items:center;gap:12px;text-align:left
+}
+.search-pill .emoji{font-size:23px}
+.search-pill strong{display:block;font-size:20px;line-height:1.05}
+.search-pill small{opacity:.7}
+.round{
+  width:48px;height:48px;border:1px solid rgba(255,255,255,.15);background:var(--panel);color:#fff;
+  border-radius:50%;box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:21px
+}
+.chips{
+  position:absolute;z-index:990;top:calc(78px + var(--safe-top));left:14px;right:14px;
+  display:flex;gap:8px;overflow:auto;scrollbar-width:none;padding-bottom:4px
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  border:1px solid rgba(255,255,255,.13);background:rgba(18,43,31,.9);color:#fff;
+  border-radius:999px;padding:9px 12px;white-space:nowrap;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.22)
+}
+.chip.off{background:rgba(250,248,241,.94);color:#1a241d;border-color:#d7ddd8}
+
+.maptools{
+  position:absolute;z-index:990;right:14px;top:calc(134px + var(--safe-top));
+  display:flex;flex-direction:column;gap:9px
+}
+.maptools button{
+  width:46px;height:46px;border:1px solid rgba(255,255,255,.13);border-radius:15px;background:var(--panel);
+  color:#fff;box-shadow:0 5px 18px rgba(0,0,0,.25);font-size:19px
+}
+
+.legend{
+  position:absolute;z-index:980;left:14px;bottom:calc(155px + var(--safe-bottom));
+  background:rgba(15,38,27,.93);color:#fff;border-radius:16px;padding:10px 12px;
+  box-shadow:0 6px 20px rgba(0,0,0,.24);font-size:12px
+}
+.legend div{display:flex;align-items:center;gap:8px;margin:5px 0}
+.swatch{width:30px;height:8px;border-radius:99px}
+
+.sheet{
+  position:absolute;z-index:1100;left:0;right:0;bottom:0;
+  background:var(--panel);color:var(--text);border-radius:26px 26px 0 0;
+  box-shadow:0 -10px 34px rgba(0,0,0,.35);padding:9px 16px calc(18px + var(--safe-bottom));
+  transition:transform .25s ease;max-height:73vh;overflow:auto
+}
+.sheet.collapsed{transform:translateY(calc(100% - 54px))}
+.handle{width:44px;height:5px;background:rgba(255,255,255,.3);border-radius:99px;margin:0 auto 10px}
+.sheet-head{display:flex;justify-content:space-between;gap:10px}
+.sheet-head h2{margin:0 0 4px;font-size:24px}
+.sheet-head p{margin:0;color:rgba(255,255,255,.68);font-size:13px}
+.icon-close{border:0;background:rgba(255,255,255,.09);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px}
+
+.scores{display:grid;gap:8px;margin:14px 0}
+.score-row{
+  display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:15px;padding:11px 12px
+}
+.score-row b{font-size:15px}
+.why{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:15px;padding:12px 14px
+}
+.why h3{margin:0 0 8px;font-size:15px}
+.why ul{margin:0;padding-left:18px;color:rgba(255,255,255,.82)}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.actions button{border:0;border-radius:13px;padding:11px 8px;font-weight:800}
+.primary{background:#f3f0e6;color:#172019}
+.secondary{background:rgba(255,255,255,.1);color:#fff}
+
+.panel{
+  position:absolute;z-index:1200;top:calc(126px + var(--safe-top));left:14px;right:14px;
+  background:rgba(247,245,238,.98);color:#18201a;border-radius:20px;padding:15px;
+  box-shadow:0 12px 36px rgba(0,0,0,.35);display:none;max-height:65vh;overflow:auto
+}
+.panel.open{display:block}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel-head h3{margin:0;font-size:22px}
+.panel .icon-close{background:#e5e9e6;color:#1d2b22}
+.toggle{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #dde2de}
+.switch{width:46px;height:28px;background:#cbd2cd;border-radius:99px;position:relative}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.28)}
+.switch.on{background:#2f7a4c}
+.switch.on::after{left:22px}
+.species-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.species{
+  border:1px solid #d7ddd8;background:#fff;border-radius:14px;padding:11px;font-weight:800
+}
+.species.active{background:#173f2c;color:#fff;border-color:#173f2c}
+
+.atlas-zone{
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(21,137,67,.58) 0%,rgba(95,172,91,.36) 40%,rgba(95,172,91,0) 72%);
+  pointer-events:auto
+}
+.atlas-zone.high{background:radial-gradient(circle,rgba(218,188,70,.52) 0%,rgba(218,188,70,.28) 42%,rgba(218,188,70,0) 72%)}
+.atlas-zone.medium{background:radial-gradient(circle,rgba(218,139,62,.48) 0%,rgba(218,139,62,.24) 42%,rgba(218,139,62,0) 72%)}
+
+.custom-marker{
+  width:18px;height:18px;border-radius:50%;background:#0f6b3d;border:3px solid white;
+  box-shadow:0 1px 6px rgba(0,0,0,.55)
+}
+
+.toast{
+  position:absolute;z-index:1300;left:50%;bottom:95px;transform:translateX(-50%);
+  background:#10291d;color:#fff;padding:10px 14px;border-radius:12px;opacity:0;transition:.2s;pointer-events:none
+}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="topbar">
+  <button class="search-pill" id="speciesButton">
+    <span class="emoji">🌿</span>
+    <span><strong id="activeLabel">Barlind</strong><small id="activeCount">1 aktiv art</small></span>
+  </button>
+  <button class="round" id="layersButton">☷</button>
+</div>
+
+<div class="chips">
+  <button class="chip" data-chip="observations">Bekreftede funn</button>
+  <button class="chip" data-chip="score">Atlas Score</button>
+  <button class="chip off" data-chip="reserve">Naturreservater</button>
+  <button class="chip off" data-chip="property">Eiendomsgrenser</button>
+</div>
+
+<div class="maptools">
+  <button id="locateButton">◎</button>
+  <button id="bestButton">★</button>
+</div>
+
+<div class="legend" id="legend">
+  <div><span class="swatch" style="background:#2f8d53"></span>Svært høy</div>
+  <div><span class="swatch" style="background:#d9bd52"></span>Høy</div>
+  <div><span class="swatch" style="background:#d98b3e"></span>Middels</div>
+</div>
+
+<section class="sheet" id="areaSheet">
+  <div class="handle" id="sheetHandle"></div>
+  <div class="sheet-head">
+    <div><h2 id="areaTitle">Andebu sør</h2><p>Svært lovende område</p></div>
+    <button class="icon-close" id="collapseButton">⌄</button>
+  </div>
+
+  <div class="scores">
+    <div class="score-row"><span>🌲 Barlind</span><b>🟢 94 – Svært høy</b></div>
+    <div class="score-row"><span>🌳 Alm</span><b>🟡 81 – Høy</b></div>
+    <div class="score-row"><span>🌿 Hassel</span><b>🟠 62 – Middels</b></div>
+  </div>
+
+  <div class="why">
+    <h3>Hvorfor anbefales området?</h3>
+    <ul>
+      <li>14 bekreftede observasjoner innen 700 meter</li>
+      <li>Kalkrik berggrunn og sørvestvendt terreng</li>
+      <li>Rik edelløvskog</li>
+      <li>Ikke registrert som naturreservat</li>
+      <li>Parkering omtrent 260 meter unna</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="navigateButton">Naviger</button>
+    <button class="secondary" id="observationsButton">Observasjoner</button>
+    <button class="secondary" id="photoButton">Flyfoto</button>
+  </div>
+</section>
+
+<section class="panel" id="layersPanel">
+  <div class="panel-head"><h3>Kartlag</h3><button class="icon-close" id="closeLayers">×</button></div>
+  <div class="toggle" data-layer="observations"><span>Bekreftede funn</span><span class="switch on"></span></div>
+  <div class="toggle" data-layer="score"><span>Atlas Score</span><span class="switch on"></span></div>
+  <div class="toggle" data-layer="reserve"><span>Naturreservater</span><span class="switch"></span></div>
+  <div class="toggle" data-layer="property"><span>Eiendomsgrenser</span><span class="switch"></span></div>
+</section>
+
+<section class="panel" id="speciesPanel">
+  <div class="panel-head"><h3>Velg arter</h3><button class="icon-close" id="closeSpecies">×</button></div>
+  <div class="species-grid">
+    <button class="species active">Barlind</button><button class="species">Alm</button>
+    <button class="species">Hassel</button><button class="species">Ask</button>
+    <button class="species">Lind</button><button class="species">Rogn</button>
+    <button class="species">Kantarell</button><button class="species">Mjødurt</button>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map('map',{zoomControl:false}).setView([59.2675,10.4076],10);
+
+const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,attribution:'&copy; OpenStreetMap'
+}).addTo(map);
+
+const observations=L.layerGroup().addTo(map);
+const score=L.layerGroup().addTo(map);
+const reserve=L.layerGroup();
+const property=L.layerGroup();
+
+function markerIcon(){
+  return L.divIcon({className:'',html:'<div class="custom-marker"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+}
+
+[
+  [59.312,10.159],[59.327,10.145],[59.298,10.181],[59.340,10.128],
+  [59.248,10.334],[59.257,10.361],[59.273,10.301]
+].forEach(p=>L.marker(p,{icon:markerIcon()}).addTo(observations).bindPopup('<b>Bekreftet observasjon</b><br>Demodata'));
+
+function addZone(lat,lng,size,cls,title){
+  const icon=L.divIcon({className:'',html:`<div class="atlas-zone ${cls}" style="width:${size}px;height:${size}px"></div>`,iconSize:[size,size],iconAnchor:[size/2,size/2]});
+  L.marker([lat,lng],{icon}).addTo(score).on('click',()=>{
+    document.getElementById('areaTitle').textContent=title;
+    document.getElementById('areaSheet').classList.remove('collapsed');
+  });
+}
+addZone(59.320,10.150,210,'','Andebu sør');
+addZone(59.355,10.050,180,'high','Kodalskogen');
+addZone(59.250,10.340,170,'medium','Sem vest');
+
+L.polygon([
+  [59.245,10.31],[59.275,10.33],[59.285,10.39],[59.255,10.43],[59.225,10.38]
+],{color:'#b74340',weight:2,fillColor:'#c8524e',fillOpacity:.10,dashArray:'6,6'}).addTo(reserve).bindPopup('Naturreservat – demo');
+
+L.rectangle([[59.22,10.24],[59.38,10.48]],{color:'#2b2b2b',weight:1,fill:false,dashArray:'4,5'}).addTo(property);
+
+const layers={observations,score,reserve,property};
+const layerState={observations:true,score:true,reserve:false,property:false};
+
+function setLayer(name,on){
+  layerState[name]=on;
+  if(on){layers[name].addTo(map)}else{map.removeLayer(layers[name])}
+  document.querySelectorAll(`[data-chip="${name}"]`).forEach(b=>b.classList.toggle('off',!on));
+  document.querySelectorAll(`[data-layer="${name}"] .switch`).forEach(s=>s.classList.toggle('on',on));
+  document.getElementById('legend').style.display=layerState.score?'block':'none';
+}
+
+document.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>setLayer(b.dataset.chip,!layerState[b.dataset.chip]));
+document.querySelectorAll('.toggle').forEach(t=>t.onclick=()=>setLayer(t.dataset.layer,!layerState[t.dataset.layer]));
+
+const speciesPanel=document.getElementById('speciesPanel');
+const layersPanel=document.getElementById('layersPanel');
+document.getElementById('speciesButton').onclick=()=>speciesPanel.classList.add('open');
+document.getElementById('closeSpecies').onclick=()=>speciesPanel.classList.remove('open');
+document.getElementById('layersButton').onclick=()=>layersPanel.classList.add('open');
+document.getElementById('closeLayers').onclick=()=>layersPanel.classList.remove('open');
+
+document.querySelectorAll('.species').forEach(b=>b.onclick=()=>{
+  b.classList.toggle('active');
+  const active=[...document.querySelectorAll('.species.active')].map(x=>x.textContent);
+  document.getElementById('activeLabel').textContent=active.join(', ')||'Ingen arter valgt';
+  document.getElementById('activeCount').textContent=`${active.length} aktiv${active.length===1?'':'e'} art${active.length===1?'':'er'}`;
+});
+
+const sheet=document.getElementById('areaSheet');
+document.getElementById('collapseButton').onclick=()=>sheet.classList.add('collapsed');
+document.getElementById('sheetHandle').onclick=()=>sheet.classList.toggle('collapsed');
+
+document.getElementById('bestButton').onclick=()=>map.flyTo([59.320,10.150],13,{duration:.8});
+
+document.getElementById('locateButton').onclick=()=>{
+  if(!navigator.geolocation){toast('GPS støttes ikke i denne nettleseren');return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const lat=p.coords.latitude,lng=p.coords.longitude;
+    map.flyTo([lat,lng],14,{duration:.8});
+    L.circleMarker([lat,lng],{radius:8,color:'#fff',weight:3,fillColor:'#2d68d8',fillOpacity:1}).addTo(map).bindPopup('Din posisjon').openPopup();
+  },()=>toast('Kunne ikke hente GPS-posisjon'));
+};
+
+function toast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1600);
+}
+document.getElementById('navigateButton').onclick=()=>window.open('https://www.google.com/maps/dir/?api=1&destination=59.320,10.150','_blank');
+document.getElementById('observationsButton').onclick=()=>{setLayer('observations',true);toast('Bekreftede funn er slått på')};
+document.getElementById('photoButton').onclick=()=>toast('Flyfoto kommer i neste versjon');
+
+map.on('moveend',()=>console.log('Kartutsnitt oppdatert'));
+</script>
+</body>
+</html>
