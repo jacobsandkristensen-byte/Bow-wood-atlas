@@ -425,7 +425,9 @@ document.getElementById('navigateButton').onclick = () => {
 };
 
 document.getElementById('observationsButton').onclick=()=>{setLayer('observations',true);toast('Bekreftede funn er slått på')};
-document.getElementById('photoButton').onclick=()=>toast('Flyfoto kommer i neste versjon');
+document.getElementById('photoButton').onclick=()=>{
+    setLayer('aerial', !layerState.aerial);
+};
 
 map.on('moveend',()=>console.log('Kartutsnitt oppdatert'));
 </script>
