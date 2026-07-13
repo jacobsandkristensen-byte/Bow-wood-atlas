@@ -152,7 +152,7 @@ button{font:inherit}
 <div class="chips">
   <button class="chip" data-chip="observations">Bekreftede funn</button>
   <button class="chip" data-chip="score">Atlas Score</button>
-  <button class="chip off" data-chip="reserve">Naturreservater</button>
+  <button class="chip off" data-chip="reserve">Naturreservater</button><button class="chip off" data-chip="aerial">Flyfoto</button>
   <button class="chip off" data-chip="property">Eiendomsgrenser</button>
 </div>
 
@@ -225,6 +225,15 @@ const map=L.map('map',{zoomControl:false}).setView([59.2675,10.4076],10);
 const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   maxZoom:19,attribution:'&copy; OpenStreetMap'
 }).addTo(map);
+const aerial = L.tileLayer.wms(
+    'https://services.norgeibilder.no/arcgis/services/Nibcache/gwc/service/wms',
+    {
+        layers: 'Nibcache',
+        format: 'image/jpeg',
+        transparent: false,
+        attribution: 'Kartverket Norge i bilder'
+    }
+);
 
 const observations=L.layerGroup().addTo(map);
 const score=L.layerGroup().addTo(map);
@@ -263,8 +272,20 @@ addZone(59.250,10.340,170,'medium','Sem vest');
 
 L.rectangle([[59.22,10.24],[59.38,10.48]],{color:'#2b2b2b',weight:1,fill:false,dashArray:'4,5'}).addTo(property);
 
-const layers={observations,score,reserve,property};
-const layerState={observations:true,score:true,reserve:false,property:false};
+const layers = {
+    observations,
+    score,
+    reserve,
+    property,
+    aerial
+};
+const layerState = {
+    observations: true,
+    score: true,
+    reserve: false,
+    property: false,
+    aerial: false
+};
 
 function setLayer(name,on){
   layerState[name]=on;
