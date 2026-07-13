@@ -228,7 +228,15 @@ const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
 const observations=L.layerGroup().addTo(map);
 const score=L.layerGroup().addTo(map);
-const reserve=L.layerGroup();
+const reserve = L.tileLayer.wms(
+  'https://kart.miljodirektoratet.no/arcgis/services/vern/MapServer/WMSServer',
+  {
+    layers: 'naturvern_omrade',
+    format: 'image/png',
+    transparent: true,
+    attribution: 'Miljødirektoratet'
+  }
+);
 const property=L.layerGroup();
 
 function markerIcon(){
@@ -251,9 +259,7 @@ addZone(59.320,10.150,210,'','Andebu sør');
 addZone(59.355,10.050,180,'high','Kodalskogen');
 addZone(59.250,10.340,170,'medium','Sem vest');
 
-L.polygon([
-  [59.245,10.31],[59.275,10.33],[59.285,10.39],[59.255,10.43],[59.225,10.38]
-],{color:'#b74340',weight:2,fillColor:'#c8524e',fillOpacity:.10,dashArray:'6,6'}).addTo(reserve).bindPopup('Naturreservat – demo');
+
 
 L.rectangle([[59.22,10.24],[59.38,10.48]],{color:'#2b2b2b',weight:1,fill:false,dashArray:'4,5'}).addTo(property);
 
