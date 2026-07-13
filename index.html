@@ -303,8 +303,100 @@ document.getElementById('locateButton').onclick=()=>{
 function toast(msg){
   const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),1600);
-}
-document.getElementById('navigateButton').onclick=()=>window.open('https://www.google.com/maps/dir/?api=1&destination=59.320,10.150','_blank');
+}let navigationWatchId = null;
+let navigationMarker = null;
+let navigationLine = null;
+
+const navigationDestination = L.latLng(59.320, 10.150);
+
+document.getElementById('navigateButton').onclick = () => {
+  const button = document.getElementById('navigateButton');
+
+  // Trykk én gang til for å avslutte navigasjonen
+  if (navigationWatchId !== null) {
+    navigator.geolocation.clearWatch(navigationWatchId);
+    navigationWatchId = null;
+
+    if (navigationLine) {
+      map.removeLayer(navigationLine);
+      navigationLine = null;
+    }
+
+    button.textContent = 'Naviger';
+    toast('Navigasjon avsluttet');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    toast('GPS støttes ikke i denne nettleseren');
+    return;
+  }
+
+  button.textContent = 'Starter GPS …';
+
+  navigationWatchId = navigator.geolocation.watchPosition(
+    position => {
+      const userPosition = L.latLng(
+        position.coords.latitude,
+        position.coords.longitude
+      );
+
+      if (!navigationMarker) {
+        navigationMarker = L.circleMarker(userPosition, {
+          radius: 8,
+          color: '#ffffff',
+          weight: 3,
+          fillColor: '#2d68d8',
+          fillOpacity: 1
+        }).addTo(map);
+      } else {
+        navigationMarker.setLatLng(userPosition);
+      }
+
+      if (navigationLine) {
+        navigationLine.setLatLngs([
+          userPosition,
+          navigationDestination
+        ]);
+      } else {
+        navigationLine = L.polyline(
+          [userPosition, navigationDestination],
+          {
+            color: '#70c36b',
+            weight: 5,
+            opacity: 0.9,
+            dashArray: '10, 8'
+          }
+        ).addTo(map);
+      }
+
+      const distance = userPosition.distanceTo(navigationDestination);
+
+      button.textContent =
+        distance >= 1000
+          ? `Stopp · ${(distance / 1000).toFixed(1)} km`
+          : `Stopp · ${Math.round(distance)} m`;
+
+      map.fitBounds(
+        L.latLngBounds([userPosition, navigationDestination]),
+        { padding: [70, 70] }
+      );
+    },
+    error => {
+      navigator.geolocation.clearWatch(navigationWatchId);
+      navigationWatchId = null;
+      button.textContent = 'Naviger';
+      toast('Kunne ikke hente GPS-posisjonen');
+      console.error(error);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 3000,
+      timeout: 15000
+    }
+  );
+};
+
 document.getElementById('observationsButton').onclick=()=>{setLayer('observations',true);toast('Bekreftede funn er slått på')};
 document.getElementById('photoButton').onclick=()=>toast('Flyfoto kommer i neste versjon');
 
